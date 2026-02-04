@@ -805,6 +805,9 @@ const POModificationTab = {
             return rest;
         });
 
+        // Persist changes to MockData
+        window.MockData.updatePO(this.currentPO.poNumber, this.currentPO);
+
         Utils.showToast('Changes saved successfully!', 'success');
         window.POWorkflow.refresh();
     },
@@ -830,6 +833,9 @@ const POModificationTab = {
             return rest;
         });
         this.currentPO.poStatus = 'Pending Approval';
+
+        // Persist changes to MockData
+        window.MockData.updatePO(this.currentPO.poNumber, this.currentPO);
 
         Utils.showToast('PO submitted for approval!', 'success');
         setTimeout(() => window.location.href = '#/po-listing', 1500);
@@ -901,6 +907,9 @@ const POModificationTab = {
             window.POHistory.trackRemarks(this.currentPO.poNumber, 'Modification Requested', remarks);
             window.POHistory.trackStatusChange(this.currentPO.poNumber, oldStatus, 'Open');
 
+            // Persist changes to MockData
+            window.MockData.updatePO(this.currentPO.poNumber, this.currentPO);
+
             tempDiv.remove();
             Utils.showToast('Modification request sent. PO status changed to Open.', 'success');
             setTimeout(() => window.location.href = '#/po-listing', 1500);
@@ -947,6 +956,9 @@ const POModificationTab = {
             window.POHistory.trackApproval(this.currentPO.poNumber, 'PO Rejection', false, remarks);
             window.POHistory.trackStatusChange(this.currentPO.poNumber, oldStatus, 'Cancelled');
 
+            // Persist changes to MockData
+            window.MockData.updatePO(this.currentPO.poNumber, this.currentPO);
+
             tempDiv.remove();
             Utils.showToast('PO rejected. Status changed to Cancelled.', 'success');
             setTimeout(() => window.location.href = '#/po-listing', 1500);
@@ -985,6 +997,9 @@ const POModificationTab = {
             // Track approval
             window.POHistory.trackApproval(this.currentPO.poNumber, 'PO Approval', true);
             window.POHistory.trackStatusChange(this.currentPO.poNumber, oldStatus, 'Approved');
+
+            // Persist changes to MockData
+            window.MockData.updatePO(this.currentPO.poNumber, this.currentPO);
 
             tempDiv.remove();
             Utils.showToast('PO approved successfully!', 'success');

@@ -856,12 +856,16 @@ const POProductionTab = {
         // Move to Logistics only if Container Number has a value
         if (canMoveToLogistics) {
             this.currentPO.poStatus = 'Shipped';
+            // Persist changes to MockData
+            window.MockData.updatePO(poNumber, this.currentPO);
             Utils.showToast('Production tracker updated. PO moved to Shipped status (Event 4: Logistics).', 'success');
             setTimeout(() => {
                 window.POWorkflow.activeTab = 'logistics';
                 window.POWorkflow.refresh();
             }, 1500);
         } else {
+            // Persist changes to MockData
+            window.MockData.updatePO(poNumber, this.currentPO);
             // Save data and stay on Production page
             Utils.showToast('Production tracker data saved successfully!', 'success');
             window.POWorkflow.refresh();

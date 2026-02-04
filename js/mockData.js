@@ -1709,6 +1709,17 @@ const MockData = {
             };
         }
         return null;
+    },
+
+    // Update PO in the original data store
+    updatePO(poNumber, updates) {
+        const index = this.purchaseOrders.findIndex(p => p.poNumber === poNumber);
+        if (index !== -1) {
+            // Merge updates into the original PO object
+            Object.assign(this.purchaseOrders[index], updates);
+            return true;
+        }
+        return false;
     }
 };
 

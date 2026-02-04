@@ -119,6 +119,19 @@ const FIELD_RULES = {
 		emptyNotificationDate: [ROLES.WH_AGENT, ROLES.NH_LEAD, ROLES.NH_USOPS],
 		emptyPickupDate: [ROLES.WH_AGENT, ROLES.NH_LEAD, ROLES.NH_USOPS],
 		emptyReturnDate: [ROLES.WH_AGENT, ROLES.NH_LEAD, ROLES.NH_USOPS]
+	},
+
+	// Fields visibility rules - which roles can see each field
+	// If a field is not listed here, it's visible to all roles with EVENT4 access
+	visibleFields: {
+		factory: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		hbl: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		freightRate: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		telexRelease: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		telexDocument: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		customs: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		packingList: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT],
+		laceyAct: [ROLES.NH_LEAD, ROLES.NH_OPS, ROLES.NH_USOPS, ROLES.FACTORY_AGENT]
 	}
 
   },
@@ -238,6 +251,49 @@ const RBAC = {
       return allowed.includes(role);
     }
     return false;
+  },
+
+  /** FIELD-LEVEL Visibility
+   *  Check if a field is visible to the current user role.
+   *  If visibleFields is not defined for a field, it defaults to visible (true).
+   */
+  canViewField(eventName, fieldName) {
+    const role = this.getRole();
+    if (!role) return false;
+    const rules = FIELD_RULES[eventName];
+    if (!rules) return true; // If no rules defined, default to visible
+
+    // Check visibleFields mapping (case-insensitive)
+    if (rules.visibleFields) {
+      const key = Object.keys(rules.visibleFields)
+        .find(k => _norm(k) === _norm(fieldName));
+      if (key) {
+        // Field has explicit visibility rules
+        return rules.visibleFields[key].includes(role);
+      }
+    }
+
+    // If field not in visibleFields, default to visible for all roles with event access
+    return true;
+  },
+
+  /** Returns array of roles that can view a specific field */
+  getRolesForFieldVisibility(eventName, fieldName) {
+    const rules = FIELD_RULES[eventName];
+    if (!rules) return [];
+
+    // Check visibleFields mapping (case-insensitive)
+    if (rules.visibleFields) {
+      const key = Object.keys(rules.visibleFields)
+        .find(k => _norm(k) === _norm(fieldName));
+      if (key) return rules.visibleFields[key];
+    }
+
+    // If no visibleFields defined, return all roles with event access
+    return EVENT_ACCESS ? Object.keys(EVENT_ACCESS).filter(role =>
+      EVENT_ACCESS[role].some(e => _norm(e) === _norm(eventName) ||
+        _norm(e) === _norm(EVENTS[eventName]))
+    ) : [];
   },
 
   /** Returns array of roles that can edit a specific field */

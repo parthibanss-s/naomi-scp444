@@ -133,16 +133,15 @@ const POLogisticsTab = {
         return this.editedData.warehouse === 'FCI';
     },
 
-    isWarehouseAgent() {
-        const session = window.AuthService.getSession();
-        return session && session.role === 'WH_AGENT';
-    },
-
     renderSection1ShippingDetails() {
         const isEditable = this.isEditable();
-        const isWHAgent = this.isWarehouseAgent();
 
-        // RBAC per-field checks
+        // RBAC per-field visibility checks
+        const canViewFactory = window.RBAC.canViewField('EVENT4', 'factory');
+        const canViewHBL = window.RBAC.canViewField('EVENT4', 'hbl');
+        const canViewFreightRate = window.RBAC.canViewField('EVENT4', 'freightRate');
+
+        // RBAC per-field edit checks
         const canEditCarrier = window.RBAC.canEditField('EVENT4', 'carrier') && isEditable;
         const canEditForwarder = window.RBAC.canEditField('EVENT4', 'forwarder') && isEditable;
         const canEditVessel = window.RBAC.canEditField('EVENT4', 'vessel') && isEditable;
@@ -155,7 +154,7 @@ const POLogisticsTab = {
 
         return `
             <div class="detail-grid">
-                ${!isWHAgent ? `
+                ${canViewFactory ? `
                 <div class="detail-field">
                     <label>Factory</label>
                     <input type="text" class="form-control" value="${Utils.escapeHtml(this.editedData.factory)}" disabled>
@@ -173,7 +172,7 @@ const POLogisticsTab = {
                     <label>Container #</label>
                     <input type="text" class="form-control" value="${Utils.escapeHtml(this.editedData.containerNumber || '')}" disabled>
                 </div>
-                ${!isWHAgent ? `
+                ${canViewHBL ? `
                 <div class="detail-field">
                     <label>HBL ${Utils.createFieldInfo('EVENT4', 'hbl')}</label>
                     <input type="text" class="form-control" id="log-hbl"
@@ -214,7 +213,7 @@ const POLogisticsTab = {
                         placeholder="Enter vessel name"
                         ${!canEditVessel ? 'disabled' : ''}>
                 </div>
-                ${!isWHAgent ? `
+                ${canViewFreightRate ? `
                 <div class="detail-field">
                     <label>Freight Rate ($) ${Utils.createFieldInfo('EVENT4', 'freightRate')}</label>
                     <input type="number" class="form-control" id="log-freight-rate"
@@ -247,7 +246,13 @@ const POLogisticsTab = {
     renderSection2Documentation() {
         const isEditable = this.isEditable();
         const hasPortDate = this.hasPortDate();
-        const isWHAgent = this.isWarehouseAgent();
+
+        // RBAC visibility checks
+        const canViewTelexRelease = window.RBAC.canViewField('EVENT4', 'telexRelease');
+        const canViewTelexDocument = window.RBAC.canViewField('EVENT4', 'telexDocument');
+        const canViewCustoms = window.RBAC.canViewField('EVENT4', 'customs');
+        const canViewPackingList = window.RBAC.canViewField('EVENT4', 'packingList');
+        const canViewLaceyAct = window.RBAC.canViewField('EVENT4', 'laceyAct');
 
         // RBAC checks for telex actions
         const canEditTelex = window.RBAC.canEditField('EVENT4', 'telexUpload') && isEditable;
@@ -267,7 +272,7 @@ const POLogisticsTab = {
 
         return `
             <div class="detail-grid">
-                ${!isWHAgent ? `
+                ${canViewTelexRelease ? `
                 <div class="detail-field">
                     <label>Telex Release ${Utils.createFieldInfo('EVENT4', 'telexUpload')}</label>
                     <select class="form-control" id="log-telex-release" ${!canEditTelex ? 'disabled' : ''}>
@@ -275,7 +280,7 @@ const POLogisticsTab = {
                         <option value="Yes" ${this.editedData.telexRelease === 'Yes' ? 'selected' : ''}>Yes</option>
                     </select>
                 </div>
-                ${telexIsYes ? `
+                ${telexIsYes && canViewTelexDocument ? `
                     <div class="detail-field">
                         <label>Telex Document</label>
                         <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
@@ -307,7 +312,7 @@ const POLogisticsTab = {
                     </div>
                 ` : ''}
                 ` : ''}
-                ${!isWHAgent ? `
+                ${canViewCustoms ? `
                 <div class="detail-field">
                     <label>Customs ${Utils.createFieldInfo('EVENT4', 'customs')}</label>
                     <select class="form-control" id="log-customs" ${!canEditCustoms ? 'disabled' : ''}>
@@ -318,7 +323,7 @@ const POLogisticsTab = {
                     <span class="field-hint">${!hasPortDate ? 'Enter Port Date first' : '&nbsp;'}</span>
                 </div>
                 ` : ''}
-                ${!isWHAgent ? `
+                ${canViewPackingList ? `
                 <div class="detail-field">
                     <label>Packing List ${Utils.createFieldInfo('EVENT4', 'packingList')}</label>
                     <select class="form-control" id="log-packing-list" ${!canEditPackingList ? 'disabled' : ''}>
@@ -329,7 +334,7 @@ const POLogisticsTab = {
                     <span class="field-hint">${!hasPortDate ? 'Enter Port Date first' : '&nbsp;'}</span>
                 </div>
                 ` : ''}
-                ${!isWHAgent ? `
+                ${canViewLaceyAct ? `
                 <div class="detail-field">
                     <label>Lacey Act ${Utils.createFieldInfo('EVENT4', 'laceyAct')}</label>
                     <select class="form-control" id="log-lacey-act" ${!canEditLaceyAct ? 'disabled' : ''}>
@@ -1097,6 +1102,8 @@ const POLogisticsTab = {
             if (oldStatus !== this.currentPO.poStatus) {
                 window.POHistory.trackStatusChange(poNumber, oldStatus, this.currentPO.poStatus);
             }
+            // Persist changes to MockData
+            window.MockData.updatePO(poNumber, this.currentPO);
             Utils.showToast('Logistics tracker updated. PO moved to Empty Return status (Event 5: Inventory).', 'success');
             setTimeout(() => {
                 window.POWorkflow.activeTab = 'inventory';
@@ -1108,6 +1115,8 @@ const POLogisticsTab = {
             if (oldStatus !== this.currentPO.poStatus) {
                 window.POHistory.trackStatusChange(poNumber, oldStatus, this.currentPO.poStatus);
             }
+            // Persist changes to MockData
+            window.MockData.updatePO(poNumber, this.currentPO);
             Utils.showToast('Logistics tracker data saved successfully!', 'success');
             window.POWorkflow.refresh();
         }

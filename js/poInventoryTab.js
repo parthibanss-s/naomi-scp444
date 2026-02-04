@@ -469,6 +469,9 @@ const POInventoryTab = {
         this.currentPO.inventoriedDate = this.editedData.inventoriedDate;
         this.currentPO.poStatus = 'Inventoried';
 
+        // Persist changes to MockData
+        window.MockData.updatePO(this.currentPO.poNumber, this.currentPO);
+
         Utils.showToast('Inventory confirmed successfully!', 'success');
 
         // Refresh the view
